@@ -1,0 +1,11 @@
+# -------- Fichiers à ignorer --------
+
+# Ignore DS_Store
+.DS_Store
+
+# Ignore les fichiers csv
+*.csv
+!data/example_input.csv
+
+# Ignore le fichier poetry.lock
+poetry.lock
