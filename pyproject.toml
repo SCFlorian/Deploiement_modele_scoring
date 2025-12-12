@@ -1,0 +1,33 @@
+[project]
+name = "deploiement-modele-scoring"
+version = "0.1.0"
+description = "API de scoring Home Credit (FastAPI + Gradio)"
+authors = [
+    { name = "Florian Schorer", email = "schorer.florian@me.com" }
+]
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+
+# Dépendances + tests
+dependencies = [
+    "pandas >=2.1,<3.0",
+    "numpy >=1.26,<2.0",
+    "scikit-learn ==1.7.2",
+    "lightgbm >=4.3.0,<5.0.0",
+    "fastapi >=0.103,<0.124",
+    "uvicorn >=0.23,<0.40",
+    "gradio >=5.0,<8.0",
+    "joblib >=1.3,<2.0",
+    "python-multipart >=0.0.6,<0.1.0",
+
+    # Obligatoire pour HF Model Hub
+    "huggingface-hub >=0.23,<1.0",
+
+    # tests
+    "pytest >=7.0,<9.0",
+    "pytest-cov >=4.0,<5.0",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
