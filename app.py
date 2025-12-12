@@ -2,6 +2,7 @@ import pandas as pd
 import joblib
 import json
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 import uvicorn
 import gradio as gr
@@ -66,7 +67,7 @@ REFERENCE_DATA = pd.read_csv("data/example_input.csv")
 # =========================
 @app.get("/")
 def root():
-    return {"message": "Bienvenue sur l'API de scoring HomeCredit !"}
+    return RedirectResponse(url="/ui")
 
 
 @app.get("/health")
