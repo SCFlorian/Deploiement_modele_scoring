@@ -2,7 +2,6 @@ import pandas as pd
 import joblib
 import json
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 import uvicorn
 import gradio as gr
@@ -65,10 +64,6 @@ REFERENCE_DATA = pd.read_csv("data/example_input.csv")
 # =========================
 # Routes simples
 # =========================
-@app.get("/")
-def root():
-    return RedirectResponse(url="/ui")
-
 
 @app.get("/health")
 def health_check():
@@ -148,7 +143,7 @@ gradio_app = gr.Interface(
     title="Home Credit Scoring – UI"
 )
 
-app = gr.mount_gradio_app(app, gradio_app, path="/ui")
+app = gr.mount_gradio_app(app, gradio_app, path="/")
 
 
 # =========================
