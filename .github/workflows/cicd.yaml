@@ -35,9 +35,12 @@ jobs:
 
     - name: Push code to Hugging Face Space
       env:
-        HF_TOKEN: ${{ secrets.TOKEN_HF }}
+        TOKEN_HF: ${{ secrets.TOKEN_HF }}
       run: |
         git config --global user.email "ci@github.com"
         git config --global user.name "github-actions"
-        git remote add hf https://FlorianSC:${TOKEN_HF}@huggingface.co/spaces/FlorianSC/Deploiement_modele_scoring || true
+
+        git remote set-url hf https://FlorianSC:${TOKEN_HF}@huggingface.co/spaces/FlorianSC/Deploiement_modele_scoring \
+          || git remote add hf https://FlorianSC:${TOKEN_HF}@huggingface.co/spaces/FlorianSC/Deploiement_modele_scoring
+
         git push hf HEAD:main --force
