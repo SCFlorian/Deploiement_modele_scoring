@@ -2,27 +2,48 @@
 # Fichiers à ignorer
 # ====================
 
+# ================
 # Ignore DS_Store
 .DS_Store
 
+# ========================
 # Ignore les fichiers csv
 *.csv
 !data/example_input.csv
 
+# ===================
 # Ignore les init.py
 __init__.py
 
+# ===================
 # Ignore les pycache
 __pycache__
 .pytest_cache
 
+# =============
 # Artefacts ML
 models/*.pkl
 models/*.joblib
 models/*.bin
 models_cache/
 
+# ===============
 # pkl tout court
 *.pkl
+
+# ========
 # Secrets
-. env
+.env
+venv
+
+# ============
+# Les init.py
+__init__.py
+
+# ==========
+# .coverage
+.coverage*
+
+# ===================================
+# Ignore les notebook pour le moment
+*.ipynb
