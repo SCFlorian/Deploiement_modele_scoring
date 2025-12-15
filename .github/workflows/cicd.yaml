@@ -31,7 +31,7 @@ jobs:
     - name: Run tests
       run: |
         export PYTHONPATH="$GITHUB_WORKSPACE:$PYTHONPATH"
-        poetry run pytest --maxfail=1 --disable-warnings -q
+        poetry run pytest --cov=src --cov=app --cov-report=term-missing --maxfail=1 --disable-warnings -q
 
     - name: Push code to Hugging Face Space
       env:
