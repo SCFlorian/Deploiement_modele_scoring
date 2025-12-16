@@ -20,7 +20,7 @@ from datetime import datetime
 # ======================
 # Initialisation de la base
 
-from database.create_db import Base, engine
+# from database.create_db import Base, engine
 
 # print("Initialisation des tables si absentes...")
 # Base.metadata.create_all(bind=engine)
