@@ -11,20 +11,21 @@ import gradio as gr
 from pathlib import Path
 from huggingface_hub import hf_hub_download
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
+import time
 
 # ======================
 # Import des modules internes
-# from database.create_db import (ClientInputDB, PredictionResultDB, RequestLogDB, ApiResponseDB)
+from database.create_db import (ClientInputDB, PredictionResultDB, RequestLogDB, ApiResponseDB, SessionLocal)
 
 # ======================
 # Initialisation de la base
 
-# from database.create_db import Base, engine
+from database.create_db import Base, engine
 
-# print("Initialisation des tables si absentes...")
-# Base.metadata.create_all(bind=engine)
-# print("Tables prêtes")
+print("Initialisation des tables si absentes...")
+Base.metadata.create_all(bind=engine)
+print("Tables prêtes")
 
 # =========================
 # Chargement des artefacts (local / HF)
@@ -85,8 +86,24 @@ REFERENCE_DATA = pd.read_csv("data/example_input.csv")
 
 @app.get("/health")
 def health_check():
-    return {"status": "OK", "message": "API opérationnelle"}
+    db = SessionLocal()
+    start_time = time.perf_counter()
 
+    response = {"status": "OK", "message": "API opérationnelle"}
+
+    latency_ms = (time.perf_counter() - start_time) * 1000
+
+    new_request = RequestLogDB(
+        endpoint="/health",
+        user_id="ml_api_user",
+        latency_ms=latency_ms,
+        timestamp=datetime.now(timezone.utc)
+    )
+    db.add(new_request)
+    db.commit()
+    db.close()
+
+    return response
 
 # =========================
 # Fonction de préparation d'un client
@@ -124,19 +141,119 @@ def prepare_client(client_id: int):
 # =========================
 @app.post("/predict")
 def predict(request: PredictRequest):
+    db = SessionLocal()
+    start_time = time.perf_counter()
 
-    df = prepare_client(request.client_id)
+    try:
+        # 1) Préparation / inférence
+        df = prepare_client(request.client_id)
+        proba = float(model.predict_proba(df)[0][1])
+        decision = "approved" if proba > THRESHOLD else "rejected"
 
-    proba = float(model.predict_proba(df)[0][1])
-    decision = "approved" if proba > THRESHOLD else "rejected"
+        # 2) Sauvegarde input
+        client_db = ClientInputDB(
+            client_id=request.client_id,
+            features=df.to_dict(orient="records")[0]
+        )
+        db.add(client_db)
+        db.commit()
+        db.refresh(client_db)
 
-    return {
-        "client_id": request.client_id,
-        "probability": round(proba, 4),
-        "decision": decision,
-        "threshold": THRESHOLD
-    }
+        # 3) Sauvegarde prédiction
+        prediction_db = PredictionResultDB(
+            client_id=client_db.id,   # FK vers client_input.id (comme dans ton create_db)
+            probability=proba,
+            decision=decision,
+            threshold=THRESHOLD
+        )
+        db.add(prediction_db)
+        db.commit()
+        db.refresh(prediction_db)
 
+        # 4) Log requête
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        req_log = RequestLogDB(
+            endpoint="/predict",
+            client_id=client_db.id,
+            user_id="ml_api_user",
+            latency_ms=latency_ms,
+            timestamp=datetime.now(timezone.utc)
+        )
+        db.add(req_log)
+        db.commit()
+        db.refresh(req_log)
+
+        # 5) Log réponse
+        resp_log = ApiResponseDB(
+            request_id=req_log.id,
+            prediction_id=prediction_db.id,
+            status_code=200,
+            message=decision
+        )
+        db.add(resp_log)
+        db.commit()
+
+        return {
+            "client_id": request.client_id,
+            "probability": round(proba, 4),
+            "decision": decision,
+            "threshold": THRESHOLD
+        }
+
+    except HTTPException as e:
+        # erreur "fonctionnelle" (client introuvable)
+        latency_ms = (time.perf_counter() - start_time) * 1000
+
+        req_log = RequestLogDB(
+            endpoint="/predict",
+            client_id=None,
+            user_id="ml_api_user",
+            latency_ms=latency_ms,
+            timestamp=datetime.now(timezone.utc)
+        )
+        db.add(req_log)
+        db.commit()
+        db.refresh(req_log)
+
+        resp_log = ApiResponseDB(
+            request_id=req_log.id,
+            prediction_id=None,
+            status_code=e.status_code,
+            message=str(e.detail)
+        )
+        db.add(resp_log)
+        db.commit()
+
+        raise
+
+    except Exception as e:
+        # erreur technique
+        latency_ms = (time.perf_counter() - start_time) * 1000
+
+        req_log = RequestLogDB(
+            endpoint="/predict",
+            client_id=None,
+            user_id="ml_api_user",
+            latency_ms=latency_ms,
+            timestamp=datetime.now(timezone.utc)
+        )
+        db.add(req_log)
+        db.commit()
+        db.refresh(req_log)
+
+        resp_log = ApiResponseDB(
+            request_id=req_log.id,
+            prediction_id=None,
+            status_code=500,
+            message=str(e)
+        )
+        db.add(resp_log)
+        db.commit()
+
+        raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        db.close()
 
 # =========================
 # Fonctions Gradio (wrappers)
