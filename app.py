@@ -20,11 +20,12 @@ from database.create_db import (ClientInputDB, PredictionResultDB, RequestLogDB,
 
 # ======================
 # Initialisation de la base
-
-from database.create_db import Base, engine
+@app.on_event("startup")
+def startup_event():
+    from database.create_db import Base, engine
+    Base.metadata.create_all(bind=engine)
 
 print("Initialisation des tables si absentes...")
-Base.metadata.create_all(bind=engine)
 print("Tables prêtes")
 
 # =========================
