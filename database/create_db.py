@@ -16,25 +16,15 @@ load_dotenv()
 IS_HF = os.getenv("SPACE_ID") is not None
 DB_URL = os.getenv("DATABASE_URL")
 
-if IS_HF:
-    print("Mode Hugging Face détecté — utilisation de SQLite (temporaire).")
-
-# ==========================================================
-# Utiliser /tmp (seul dossier en écriture sur Hugging Face)
-    DB_DIR = "/tmp"
-    DB_PATH = os.path.join(DB_DIR, "hf_temp.db")
-
-# ==============================
-# Crée le fichier si nécessaire
-    if not os.path.exists(DB_PATH):
-        open(DB_PATH, "a").close()
-
+if IS_HF or DB_URL is None:
+    DB_PATH = "/tmp/test.db"
     DB_URL = f"sqlite:///{DB_PATH}"
 
-elif DB_URL:
-    print("Mode local — connexion PostgreSQL utilisée.")
-else:
-    raise ValueError("DATABASE_URL introuvable dans .env (nécessaire en local).")
+connect_args = {"check_same_thread": False}
+engine = create_engine(DB_URL, connect_args=connect_args, echo=False)
+
+SessionLocal = sessionmaker(bind=engine)
+Base = declarative_base()
 
 # =====================
 # Connexion SQLAlchemy
@@ -109,3 +99,9 @@ class ApiResponseDB(Base):
 
     # Relation
     request = relationship("RequestLogDB", back_populates="responses")
+
+    #  CRÉATION DES TABLES
+
+if __name__ == "__main__":
+    Base.metadata.create_all(bind=engine)
+    print("Base de données et tables créées avec succès.")
