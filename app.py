@@ -1,3 +1,6 @@
+# =======================
+# Librairies nécessaires
+# =======================
 import pandas as pd
 import joblib
 import json
@@ -7,6 +10,21 @@ import uvicorn
 import gradio as gr
 from pathlib import Path
 from huggingface_hub import hf_hub_download
+from sqlalchemy.orm import Session
+from datetime import datetime
+
+# ======================
+# Import des modules internes
+# from database.create_db import (ClientInputDB, PredictionResultDB, RequestLogDB, ApiResponseDB)
+
+# ======================
+# Initialisation de la base
+
+from database.create_db import Base, engine
+
+# print("Initialisation des tables si absentes...")
+# Base.metadata.create_all(bind=engine)
+# print("Tables prêtes")
 
 # =========================
 # Chargement des artefacts (local / HF)
@@ -121,8 +139,9 @@ def predict(request: PredictRequest):
 
 
 # =========================
-# UI GRADIO
+# Fonctions Gradio (wrappers)
 # =========================
+
 def gradio_predict(client_id):
     try:
         client_id = int(client_id)
@@ -131,17 +150,66 @@ def gradio_predict(client_id):
         proba = float(model.predict_proba(df)[0][1])
         decision = "approved" if proba > THRESHOLD else "rejected"
 
-        return f"Client: {client_id}\nProbabilité: {proba:.4f}\nDécision: {decision}"
+        return {
+            "client_id": client_id,
+            "probability": round(proba, 4),
+            "decision": decision,
+            "threshold": THRESHOLD
+        }
     except Exception as e:
-        return f"Erreur : {str(e)}"
+        return {"error": str(e)}
 
 
-gradio_app = gr.Interface(
-    fn=gradio_predict,
-    inputs=gr.Number(label="SK_ID_CURR du client"),
-    outputs="text",
-    title="Home Credit Scoring – UI"
-)
+def gradio_health():
+    return health_check()
+
+
+def gradio_model_info():
+    return {
+        "model_type": type(model).__name__,
+        "threshold": THRESHOLD,
+        "n_features": len(EXPECTED_COLS)
+    }
+
+columns_list = REFERENCE_DATA["SK_ID_CURR"]
+
+# =========================
+# UI GRADIO MULTI-ENDPOINTS
+# =========================
+
+with gr.Blocks(title="Home Credit Scoring – API UI") as gradio_app:
+
+    gr.Markdown("# 📊 Home Credit Scoring API")
+    gr.Markdown("### L'objectif ici est de choisir un nouveau client pour connaître sa situation")
+
+    with gr.Tab("🔮 Prédiction"):
+        client_id_input = gr.Dropdown(label="SK_ID_CURR du client (à choisir dans la liste)", choices=columns_list.to_list())
+        predict_btn = gr.Button("Prédire")
+        predict_output = gr.JSON()
+
+        predict_btn.click(
+            fn=gradio_predict,
+            inputs=client_id_input,
+            outputs=predict_output
+        )
+
+    with gr.Tab("❤️ Health Check"):
+        health_btn = gr.Button("Vérifier l'état de l'API")
+        health_output = gr.JSON()
+
+        health_btn.click(
+            fn=gradio_health,
+            outputs=health_output
+        )
+
+    with gr.Tab("ℹ️ Infos Modèle"):
+        info_btn = gr.Button("Afficher les infos du modèle")
+        info_output = gr.JSON()
+
+        info_btn.click(
+            fn=gradio_model_info,
+            outputs=info_output
+        )
 
 app = gr.mount_gradio_app(app, gradio_app, path="/")
 
