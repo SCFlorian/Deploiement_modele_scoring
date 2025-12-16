@@ -38,7 +38,7 @@ else:
 
 # =====================
 # Connexion SQLAlchemy
-
+connect_args = {"check_same_thread": False} if DB_URL.startswith("sqlite") else {}
 engine = create_engine(DB_URL, echo=True)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
