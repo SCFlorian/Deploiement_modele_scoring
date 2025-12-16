@@ -34,7 +34,9 @@ if IS_HF:
 elif DB_URL:
     print("Mode local — connexion PostgreSQL utilisée.")
 else:
-    raise ValueError("DATABASE_URL introuvable dans .env (nécessaire en local).")
+    # CI / tests / fallback
+    print("Mode CI/test détecté — utilisation SQLite en mémoire.")
+    DB_URL = "sqlite:///:memory:"
 
 # =====================
 # Connexion SQLAlchemy
