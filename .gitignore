@@ -47,3 +47,4 @@ __init__.py
 # ===================================
 # Ignore les notebook pour le moment
 *.ipynb
+!monitoring_evidentlyai.ipynb
