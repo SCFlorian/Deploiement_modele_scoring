@@ -56,7 +56,8 @@ class ClientInputDB(Base):
 class PredictionResultDB(Base):
     __tablename__ = "prediction_results"
     id = Column(Integer, primary_key=True)
-    client_id = Column(Integer, ForeignKey("client_input.id"), index=True)
+    client_input_id = Column(Integer, ForeignKey("client_input.id"), index=True)
+    client_id = Column(Integer)
     probability = Column(Float)
     decision = Column(String)
     threshold = Column(Float)
@@ -74,9 +75,11 @@ class RequestLogDB(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     endpoint = Column(String)
-    client_id = Column(Integer, ForeignKey("client_input.id"))
+    client_input_id = Column(Integer, ForeignKey("client_input.id"))
+    client_id = Column(Integer)
     user_id = Column(String, default="ml_api_user")
     latency_ms = Column(Float)
+    inference_ms = Column(Float)
     timestamp = Column(DateTime, server_default=func.now())
 
     # Relation

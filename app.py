@@ -4,18 +4,22 @@
 import pandas as pd
 import joblib
 import json
+import time
+import logging
+from datetime import datetime, timezone
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import uvicorn
 import gradio as gr
-from pathlib import Path
+
 from huggingface_hub import hf_hub_download
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
-import time
 
 # ======================
 # Import des modules internes
+# ======================
 from database.create_db import (
     ClientInputDB,
     PredictionResultDB,
@@ -27,7 +31,19 @@ from database.create_db import (
 )
 
 # ======================
+# Logger JSON structuré
+# ======================
+logger = logging.getLogger("ml_api")
+logger.setLevel(logging.INFO)
+
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(message)s'))
+    logger.addHandler(handler)
+
+# ======================
 # Initialisation de la base
+# ======================
 print("Initialisation des tables si absentes...")
 Base.metadata.create_all(bind=engine)
 print("Tables prêtes")
@@ -49,7 +65,7 @@ def get_artifact(path: str) -> str:
     )
 
 # =========================
-# Initialisation
+# Initialisation FastAPI
 # =========================
 app = FastAPI(title="HomeCredit Scoring API")
 
@@ -60,7 +76,7 @@ class PredictRequest(BaseModel):
     client_id: int
 
 # =========================
-# Chargement du modèle & données
+# Chargement modèle & données
 # =========================
 model = joblib.load(get_artifact("pipeline_lightgbm.pkl"))
 imputer = joblib.load(get_artifact("imputer_numeric.pkl"))
@@ -75,7 +91,7 @@ THRESHOLD = float(open("models/threshold.txt").read().strip())
 REFERENCE_DATA = pd.read_csv("data/example_input.csv")
 
 # =========================
-# Routes simples
+# Endpoint Health
 # =========================
 @app.get("/health")
 def health_check():
@@ -83,6 +99,7 @@ def health_check():
     start_time = time.perf_counter()
 
     latency_ms = (time.perf_counter() - start_time) * 1000
+
     db.add(RequestLogDB(
         endpoint="/health",
         user_id="ml_api_user",
@@ -92,12 +109,21 @@ def health_check():
     db.commit()
     db.close()
 
+    logger.info(json.dumps({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "event": "health_check",
+        "endpoint": "/health",
+        "latency_ms": latency_ms,
+        "status_code": 200,
+        "error": None
+    }))
+
     return {"status": "OK", "message": "API opérationnelle"}
 
 # =========================
-# Fonction de préparation d'un client
+# Préparation client
 # =========================
-def prepare_client(client_id: int):
+def prepare_client(client_id: int) -> pd.DataFrame:
     row = REFERENCE_DATA[REFERENCE_DATA["SK_ID_CURR"] == client_id]
     if row.empty:
         raise HTTPException(404, f"Client {client_id} introuvable")
@@ -106,6 +132,7 @@ def prepare_client(client_id: int):
     for col in EXPECTED_COLS:
         if col not in df.columns:
             df[col] = 0.0
+
     df = df[EXPECTED_COLS]
 
     if "is_train" not in df.columns:
@@ -115,7 +142,7 @@ def prepare_client(client_id: int):
     return df
 
 # =========================
-# Endpoint API
+# Endpoint Predict
 # =========================
 @app.post("/predict")
 def predict(request: PredictRequest):
@@ -123,10 +150,17 @@ def predict(request: PredictRequest):
     start_time = time.perf_counter()
 
     try:
+        # Préparation
         df = prepare_client(request.client_id)
+
+        # Inference pure
+        infer_start = time.perf_counter()
         proba = float(model.predict_proba(df)[0][1])
+        inference_ms = (time.perf_counter() - infer_start) * 1000
+
         decision = "approved" if proba > THRESHOLD else "rejected"
 
+        # Sauvegarde input
         client_db = ClientInputDB(
             client_id=request.client_id,
             features=df.to_dict(orient="records")[0]
@@ -135,8 +169,10 @@ def predict(request: PredictRequest):
         db.commit()
         db.refresh(client_db)
 
+        # Sauvegarde prediction
         prediction_db = PredictionResultDB(
-            client_id=client_db.id,
+            client_input_id=client_db.id,
+            client_id=request.client_id,
             probability=proba,
             decision=decision,
             threshold=THRESHOLD
@@ -145,18 +181,22 @@ def predict(request: PredictRequest):
         db.commit()
         db.refresh(prediction_db)
 
+        # Log requête
         latency_ms = (time.perf_counter() - start_time) * 1000
         req_log = RequestLogDB(
             endpoint="/predict",
-            client_id=client_db.id,
+            client_input_id=client_db.id,
+            client_id=request.client_id,
             user_id="ml_api_user",
             latency_ms=latency_ms,
+            inference_ms=inference_ms,
             timestamp=datetime.now(timezone.utc)
         )
         db.add(req_log)
         db.commit()
         db.refresh(req_log)
 
+        # Log réponse
         db.add(ApiResponseDB(
             request_id=req_log.id,
             prediction_id=prediction_db.id,
@@ -165,6 +205,20 @@ def predict(request: PredictRequest):
         ))
         db.commit()
 
+        # Logger JSON
+        logger.info(json.dumps({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": "predict",
+            "endpoint": "/predict",
+            "client_id": request.client_id,
+            "probability": round(proba, 4),
+            "decision": decision,
+            "latency_ms": latency_ms,
+            "inference_ms": inference_ms,
+            "status_code": 200,
+            "error": None
+        }))
+
         return {
             "client_id": request.client_id,
             "probability": round(proba, 4),
@@ -172,15 +226,24 @@ def predict(request: PredictRequest):
             "threshold": THRESHOLD
         }
 
+    except Exception as e:
+        logger.error(json.dumps({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": "predict_error",
+            "endpoint": "/predict",
+            "client_id": request.client_id,
+            "status_code": 500,
+            "error": str(e)
+        }))
+        raise
+
     finally:
         db.close()
 
 # =========================
-# Fonctions Gradio (wrappers)
+# Fonctions Gradio
 # =========================
-
 def gradio_predict(client_id):
-    # ✅ APPEL DIRECT DU ENDPOINT → SQL OK
     return predict(PredictRequest(client_id=int(client_id)))
 
 def gradio_health():
@@ -193,11 +256,11 @@ def gradio_model_info():
         "n_features": len(EXPECTED_COLS)
     }
 
+# =========================
+# UI Gradio
+# =========================
 columns_list = REFERENCE_DATA["SK_ID_CURR"]
 
-# =========================
-# UI GRADIO MULTI-ENDPOINTS
-# =========================
 with gr.Blocks(title="Home Credit Scoring – API UI") as gradio_app:
     gr.Markdown("# 📊 Home Credit Scoring API")
 
@@ -208,24 +271,13 @@ with gr.Blocks(title="Home Credit Scoring – API UI") as gradio_app:
         )
         predict_btn = gr.Button("Prédire")
         predict_output = gr.JSON()
-
-        predict_btn.click(
-            fn=gradio_predict,
-            inputs=client_id_input,
-            outputs=predict_output
-        )
+        predict_btn.click(gradio_predict, client_id_input, predict_output)
 
     with gr.Tab("❤️ Health Check"):
-        gr.Button("Vérifier").click(
-            fn=gradio_health,
-            outputs=gr.JSON()
-        )
+        gr.Button("Vérifier").click(gradio_health, outputs=gr.JSON())
 
     with gr.Tab("ℹ️ Infos Modèle"):
-        gr.Button("Infos").click(
-            fn=gradio_model_info,
-            outputs=gr.JSON()
-        )
+        gr.Button("Infos").click(gradio_model_info, outputs=gr.JSON())
 
 app = gr.mount_gradio_app(app, gradio_app, path="/")
 
