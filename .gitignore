@@ -48,3 +48,11 @@ __init__.py
 # Ignore les notebook pour le moment
 *.ipynb
 !monitoring_evidentlyai.ipynb
+monitoring
+
+# ================================
+# Ignore streamlit pour le moment
+# ================================
+streamlit
+streamlit_test.py
+dashboard_streamlit.py
