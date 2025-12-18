@@ -148,6 +148,7 @@ def prepare_client(client_id: int) -> pd.DataFrame:
 def predict(request: PredictRequest):
     db = SessionLocal()
     start_time = time.perf_counter()
+    cpu_start = time.process_time()
 
     try:
         # Préparation
@@ -183,6 +184,7 @@ def predict(request: PredictRequest):
 
         # Log requête
         latency_ms = (time.perf_counter() - start_time) * 1000
+        cpu_time_ms = (time.process_time() - cpu_start) * 1000
         req_log = RequestLogDB(
             endpoint="/predict",
             client_input_id=client_db.id,
@@ -190,6 +192,7 @@ def predict(request: PredictRequest):
             user_id="ml_api_user",
             latency_ms=latency_ms,
             inference_ms=inference_ms,
+            cpu_time_ms=cpu_time_ms,
             timestamp=datetime.now(timezone.utc)
         )
         db.add(req_log)
@@ -215,6 +218,7 @@ def predict(request: PredictRequest):
             "decision": decision,
             "latency_ms": latency_ms,
             "inference_ms": inference_ms,
+            "cpu_time_ms": cpu_time_ms,
             "status_code": 200,
             "error": None
         }))

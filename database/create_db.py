@@ -80,6 +80,7 @@ class RequestLogDB(Base):
     user_id = Column(String, default="ml_api_user")
     latency_ms = Column(Float)
     inference_ms = Column(Float)
+    cpu_time_ms = Column(Float)
     timestamp = Column(DateTime, server_default=func.now())
 
     # Relation

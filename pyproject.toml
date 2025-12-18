@@ -23,6 +23,9 @@ dependencies = [
     "ipykernel (>=7.1.0,<8.0.0)",
     "python-dotenv (>=1.2.1,<2.0.0)",
     "psycopg2-binary (>=2.9.11,<3.0.0)",
+    "python-json-logger (>=4.0.0,<5.0.0)",
+    "evidently (>=0.7.17,<0.8.0)",
+    "streamlit (>=1.52.2,<2.0.0)",
     
     # Obligatoire pour HF Model Hub
     "huggingface-hub >=0.23,<1.0",
@@ -30,8 +33,6 @@ dependencies = [
     # tests
     "pytest >=7.0,<9.0",
     "pytest-cov >=4.0,<5.0",
-    "python-json-logger (>=4.0.0,<5.0.0)",
-    "evidently (>=0.7.17,<0.8.0)",
 ]
 
 [build-system]
