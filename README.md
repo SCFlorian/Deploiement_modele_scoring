@@ -6,10 +6,10 @@ colorTo: gray
 sdk: docker
 pinned: false
 ---
-# Déploiement d'un modèle de scoring
+# 📊 Déploiement d'un modèle de scoring
 ---
 ## Description
-Précédemment nous avons réaliser un modèle scoring en partant du projet Home Credit Default Risk sur Kaggle. Nous allons reprendre le meilleur modèle de ce projet afin de le déployer.
+Précédemment nous avons réalisé un modèle de scoring en partant du projet Home Credit Default Risk de Kaggle. Nous allons reprendre le meilleur modèle de ce projet afin de le déployer.
 
 ## Objectifs 
 
@@ -19,6 +19,7 @@ Les objectifs sont les suivants :
 - des tests unintaires automatisées
 - un dockerfile
 - Une analyse du Data Drift -> Réalisé avec EvidentlyAI
+- Un dashboard avec Streamlit
 - une solution de stockage des données en production
 - un pipeline CI/CD
 - une documentation README
@@ -48,6 +49,7 @@ https://www.kaggle.com/c/home-credit-default-risk/data
 ├── monitoring     # Dossier présent uniquement en local car trop volumineux
 │   ├── dashboard_streamlit.py
 │   ├── monitoring_evidentlyai.ipynb
+│   ├── cprofile_test.ipynb
 │
 ├── tests/        
 │   ├── test_basic.py
@@ -62,7 +64,7 @@ https://www.kaggle.com/c/home-credit-default-risk/data
 ├── poetry.lock
 └── pyproject.toml    # Dépendances et configuration
 ```
-### Sur un dépôt Hugging Face
+### Dans un dépôt Hugging Face
 https://huggingface.co/FlorianSC/homecredit-scoring-artifacts
 ```
 homecredit-scoring-artifacts
@@ -123,6 +125,8 @@ http://127.0.0.1:8000
 
 #### Création d'un dashboard pour le monitoring opérationnel avec Streamlit
 - Générer l'environnement virtuel :
-    - poetry run streamlit run monitoring/dashboard_streamlit.py
+```
+poetry run streamlit run monitoring/dashboard_streamlit.py
+```
 
 
