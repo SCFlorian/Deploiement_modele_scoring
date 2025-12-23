@@ -16,9 +16,9 @@ Précédemment nous avons réalisé un modèle de scoring en partant du projet H
 Les objectifs sont les suivants :
 - un historique des versions
 - une API fonctionnelle -> FastAPI avec une interface réalisée avec Gradio
-- des tests unintaires automatisées
+- des tests unintaires automatisés
 - un dockerfile
-- Une analyse du Data Drift -> Réalisé avec EvidentlyAI
+- Une analyse du Data Drift -> Réalisée avec EvidentlyAI
 - Un dashboard avec Streamlit
 - une solution de stockage des données en production
 - un pipeline CI/CD
@@ -130,5 +130,14 @@ http://127.0.0.1:8000
 ```
 poetry run streamlit run monitoring/dashboard_streamlit.py
 ```
+- Dashboard Streamlit
 
+On peut remarquer des temps plutôt cohérent avec notre type de modèle :
+    - Un temps d'inférence rapide.
+    - La latence global et le temps CPU sont cohérentes avec l'objectif du projet.
+
+#### Génération de l'analyse du datadrift
+- Rapport EvidendlyAI
+
+    - Pas de présence d'un gros changement entre les données qui ont contribué à l'entraînement et celles utilisées pour les nouveaux clients
 
