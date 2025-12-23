@@ -132,12 +132,16 @@ poetry run streamlit run monitoring/dashboard_streamlit.py
 ```
 - Dashboard Streamlit
 
+<img width="766" height="726" alt="Capture d’écran 2025-12-23 à 11 16 51" src="https://github.com/user-attachments/assets/d684e0d7-566b-4c7f-8869-b7a19cda1dd2" />
+
 On peut remarquer des temps plutôt cohérent avec notre type de modèle :
     - Un temps d'inférence rapide.
-    - La latence global et le temps CPU sont cohérentes avec l'objectif du projet.
+    - La latence global et le temps CPU -> cohérence avec l'objectif du projet.
 
 #### Génération de l'analyse du datadrift
 - Rapport EvidendlyAI
 
-    - Pas de présence d'un gros changement entre les données qui ont contribué à l'entraînement et celles utilisées pour les nouveaux clients
+<img width="1274" height="645" alt="Capture d’écran 2025-12-23 à 15 37 08" src="https://github.com/user-attachments/assets/7d987f90-0a71-4432-b443-dab032b18879" />
+
+Pas de présence d'un gros changement entre les données qui ont contribué à l'entraînement et celles utilisées pour les nouveaux clients.
 
