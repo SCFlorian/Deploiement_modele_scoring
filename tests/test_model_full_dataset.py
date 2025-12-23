@@ -9,6 +9,7 @@ import joblib
 from huggingface_hub import hf_hub_download
 
 
+
 # ==== Chemins de base ====
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
@@ -57,6 +58,9 @@ def test_model_full_dataset():
     assert df.dtypes.apply(
         lambda t: t in ["float64", "int64"]
     ).all(), "Toutes les variables doivent être numériques"
+    assert (df['DAYS_BIRTH'] <= 100).all(), "Il faut s'assurer d'avoir un âge cohérent"
+    assert (df['CNT_CHILDREN'] <= 10).all(), "Ne pas avoir un nombre incogérent d'enfant"
+    assert (df['SK_ID_CURR'] != 0).all(), "Il ne peut pas avoir de client ID vide"
 
     # === Alignement colonnes ===
     for col in EXPECTED_COLS:

@@ -17,6 +17,7 @@ import gradio as gr
 from huggingface_hub import hf_hub_download
 from sqlalchemy.orm import Session
 
+
 # ======================
 # Import des modules internes
 # ======================
