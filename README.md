@@ -35,8 +35,8 @@ https://www.kaggle.com/c/home-credit-default-risk/data
 ├── .github/workflows
 │   ├──cicd.yaml
 ├── data
-│   ├── example_input.csv
-│   └── train_df.csv     # Fichier présent uniquement en local car volumineux
+│   ├── example_input.csv # Nouveaux clients à tester
+│   └── train_df.csv      # Données d'entraînement / Fichier présent uniquement en local car volumineux
 │
 ├── database      
 │   ├── create_db.py     # Création des tables de la BDD
@@ -47,20 +47,22 @@ https://www.kaggle.com/c/home-credit-default-risk/data
 │   ├── threshold.txt
 │
 ├── monitoring     # Dossier présent uniquement en local car trop volumineux
-│   ├── dashboard_streamlit.py
-│   ├── monitoring_evidentlyai.ipynb
-│   ├── cprofile_test.ipynb
+│   ├── dashboard_streamlit.py        # Tableaux de bord des indicateurs opérationnels
+│   ├── monitoring_evidentlyai.ipynb  # Anlayse du datadrift
+│   ├── cprofile.ipynb                # Optimisation du code sur la fonction prepare_client
+│   ├── cprofile_old.ipynb            # Fichier app avant optimisation du code
 │
 ├── tests/        
 │   ├── test_basic.py
 │   ├── test_endpoints.py
 │   ├── test_model_full_dataset.py
 │ 
-├── .env     # Présent uniquement en local car gère les mdp
+├── .env     # Présent uniquement en local car gère les "secrets"
 ├── .gitignore
-├── Dockerfile
-├── README.md         # Documentation du projet
-├── app.py
+├── app.py        # Fichier app avant transformation
+├── app_old.py    # Fichier app après transformation
+├── Dockerfile    # Conteneurisation
+├── README.md     # Documentation du projet
 ├── poetry.lock
 └── pyproject.toml    # Dépendances et configuration
 ```

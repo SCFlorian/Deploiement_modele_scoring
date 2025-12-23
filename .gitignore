@@ -56,3 +56,9 @@ monitoring
 streamlit
 streamlit_test.py
 dashboard_streamlit.py
+
+# ===============
+# Ignore app_old
+# =============== 
+app_old.py
+old.prof
