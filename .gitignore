@@ -62,3 +62,8 @@ dashboard_streamlit.py
 # =============== 
 app_old.py
 old.prof
+
+# =====================
+# Ignore le ficher txt
+# =====================
+historique_commits.txt
